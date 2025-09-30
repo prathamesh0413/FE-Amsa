@@ -37,7 +37,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      KeyName: !Ref ubuntu-key
+      KeyName: !Ref KeyName          # ✅ Use the parameter here
       ImageId: ami-080e1f13689e07408  # Replace with correct Ubuntu 22.04 AMI for your region
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
