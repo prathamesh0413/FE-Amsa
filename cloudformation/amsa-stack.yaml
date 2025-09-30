@@ -23,8 +23,8 @@ Resources:
   AmsaEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: t3.medium
-      KeyName: ubuntu-key.pem   # Replace with your EC2 keypair
+      InstanceType: t2.micro
+      KeyName: ubuntu-key.pem  # Replace with your EC2 keypair
       ImageId: ami-080e1f13689e07408  # Ubuntu 22.04 AMI
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
