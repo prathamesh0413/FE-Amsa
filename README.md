@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌟 AMSA Website  
 
-## Getting Started
+![Project Banner](https://via.placeholder.com/1200x300?text=AMSA+Website+Project)  
 
-First, run the development server:
+**AMSA** is a full-stack web application designed to manage and showcase AMSA activities, events, and member engagement.  
+It uses a modern React frontend, a Node.js backend, automated CI/CD pipeline, and secure AWS-based deployment.  
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🚀 Features  
+
+- ⚡ **Fast Frontend**: React + Vite for optimized builds and performance  
+- 🔧 **Backend API**: Node.js + Express for business logic and APIs  
+- 🛠️ **CI/CD Pipeline**: Automated builds and deployments via GitHub Actions  
+- 🌍 **CloudFront CDN**: Global delivery of static frontend assets  
+- 📊 **Monitoring & Alerts**: Server health and error tracking via AWS CloudWatch  
+- ☁️ **AWS Hosting**: Frontend + Backend deployed on AWS EC2  
+- 🔐 **Secure by Default**: HTTPS + SSL certificates  
+
+---
+
+## 🗂 Project Structure  
+
+```
+amsa-website/
+├── CloudFormation/         # AWS infrastructure templates
+├── frontend/               # React + Vite frontend
+├── backend/                # Node.js + Express backend
+├── .github/workflows/      # CI/CD pipeline
+└── README.md               # Documentation
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Component   | Technology                     |
+|-------------|--------------------------------|
+| Frontend    | React, Vite                    |
+| Backend     | Node.js, Express               |
+| Hosting     | AWS EC2                        |
+| CDN         | AWS CloudFront                 |
+| CI/CD       | GitHub Actions                 |
+| Monitoring  | AWS CloudWatch / Dashboards    |
+| Security    | HTTPS / SSL Certificates       |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🏗️ Architecture Overview  
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **GitHub Actions** → Builds, tests, and deploys frontend + backend  
+- **EC2 Instances** → Hosts frontend and backend servers  
+- **CloudFront CDN** → Caches frontend for global performance  
+- **Monitoring** → Tracks uptime, CPU, memory, network, and errors  
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📦 Deployment Process  
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1️⃣ CloudFormation (IaC)  
+- Spins up EC2 instances for frontend & backend  
+- Configures networking, ports, and security groups  
+- Sets up CloudFront distribution  
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2️⃣ CI/CD (GitHub Actions)  
+- Triggered on `push` to `main`  
+- **Frontend:** Install → Test → Build → Deploy to EC2  
+- **Backend:** Install → Test → Deploy with `pm2`  
+
+### 3️⃣ Monitoring & Alerts  
+- CloudWatch dashboards for performance  
+- Alerts via Email / Slack  
+
+### 4️⃣ Manual Deployment (first time setup)  
+
+**Frontend**
+```bash
+cd frontend
+npm install
+npm run build
+
+# Copy build to EC2
+scp -r dist/ ubuntu@<FRONTEND_EC2_IP>:/var/www/html
+```
+
+**Backend**
+```bash
+cd backend
+npm install
+
+# Copy backend to EC2
+scp -r ./ ubuntu@<BACKEND_EC2_IP>:/home/ubuntu/backend
+
+# SSH into EC2 and start
+ssh ubuntu@<BACKEND_EC2_IP>
+cd backend
+pm2 start index.js --name backend
+```
+
+**CloudFront + SSL**
+- Configure CloudFront to serve `/dist`  
+- Attach SSL certificate for HTTPS  
+
+---
+
+## 🌐 Demo URLs  
+
+- Frontend (HTTPS): `https://<FRONTEND_EC2_IP>`  
+- Backend API (HTTPS): `https://<BACKEND_EC2_IP>`  
+*(Replace with EC2 IPs or CloudFront URLs)*  
+
+---
+
+## 💻 Quick Setup Guide  
+
+```bash
+# Clone repo
+git clone https://github.com/<your-username>/amsa-website.git
+cd amsa-website
+
+# Frontend
+cd frontend
+npm install
+npm run dev      # Development
+npm run build    # Production
+
+# Backend
+cd ../backend
+npm install
+npm start        # Development
+pm2 start index.js --name backend  # Production
+```
+
+---
+
+## 🏷️ Badges  
+
+![React](https://img.shields.io/badge/Frontend-React-blue)  
+![Vite](https://img.shields.io/badge/Build-Vite-yellow)  
+![Node.js](https://img.shields.io/badge/Backend-Node.js-green)  
+![AWS](https://img.shields.io/badge/Cloud-AWS-orange)  
+![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-black)  
+
+---
+
+## 📄 License  
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file.  
