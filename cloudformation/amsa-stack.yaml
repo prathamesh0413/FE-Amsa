@@ -25,7 +25,7 @@ Resources:
     Properties:
       InstanceType: t3.medium
       KeyName: ubuntu-key.pem   # Replace with your EC2 keypair
-      ImageId: ami-0a716d3f3b16d290c  # Ubuntu 22.04 AMI
+      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04 AMI
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
       UserData: 
