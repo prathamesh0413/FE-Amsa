@@ -24,7 +24,7 @@ jobs:
 
     # 3. Deploy CloudFormation Stack (provision EC2, SG, etc.)
     - name: Deploy CloudFormation Stack
-      uses: aws-actions/aws-cloudformation-github-deploy@v2
+      uses: aws-actions/aws-cloudformation-github-deploy@v1.3.0
       with:
         name: AmsaStack
         template: ./cloudformation/amsa-stack.yaml
