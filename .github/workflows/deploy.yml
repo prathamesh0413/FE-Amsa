@@ -101,4 +101,4 @@ jobs:
 
           # --- Reload services ---
           sudo systemctl reload nginx
-          pm2 sa
+          pm2 save
