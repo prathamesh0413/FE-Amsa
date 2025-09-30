@@ -84,7 +84,7 @@ export default function ContactPage() {
    
       // const backendApiUrl = process.env.NEXT_PUBLIC_API_URL;
       // const backendApiUrl = "http://localhost:3001";
- const backendApiUrl = "http://54.160.155.117";
+ const backendApiUrl = "http://34.229.158.208";
 
      
       if (!backendApiUrl) {
