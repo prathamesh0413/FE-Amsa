@@ -1,6 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: EC2 instance for Amsa Frontend and Backend
 
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair for SSH access
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+    Description: EC2 instance type
+
 Resources:
   AmsaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -23,12 +36,12 @@ Resources:
   AmsaEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: t2.micro
-      KeyName: ubuntu-key  # Replace with your EC2 keypair
-      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04 AMI
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref ubuntu-key
+      ImageId: ami-080e1f13689e07408  # Replace with correct Ubuntu 22.04 AMI for your region
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
-      UserData: 
+      UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo apt update -y
@@ -37,3 +50,12 @@ Resources:
           sudo apt-get install -y nodejs
           sudo npm install -g pm2
           sudo systemctl enable nginx
+          sudo systemctl start nginx
+
+Outputs:
+  PublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt AmsaEC2Instance.PublicIp
+  PublicDNS:
+    Description: Public DNS of the EC2 instance
+    Value: !GetAtt AmsaEC2Instance.PublicDnsName
