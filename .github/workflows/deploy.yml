@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Infra Repo (CloudFormation template)
+    # 1. Checkout Infra Repo (needed for CloudFormation template)
     - name: Checkout Infra Repo
       uses: actions/checkout@v3
 
@@ -42,9 +42,9 @@ jobs:
           --region ${{ secrets.AWS_REGION }})
         echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-    # 5. Wait for EC2 initialization
+    # 5. Wait for EC2 to initialize
     - name: Wait for EC2 Initialization
-      run: sleep 60
+      run: sleep 30
 
     # 6. Checkout Frontend Repo
     - name: Checkout Frontend
@@ -60,26 +60,7 @@ jobs:
         repository: 'prathamesh0413/BE-Amsa'
         path: backend
 
-    # 8. Setup Node.js
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    # 9. Build Frontend
-    - name: Build Frontend
-      working-directory: frontend
-      run: |
-        npm install
-        npm run build
-        npm run export || true
-
-    # 10. Build Backend
-    - name: Build Backend
-      working-directory: backend
-      run: npm install
-
-    # 11. Deploy to EC2
+    # 8. Deploy to EC2 via SSH
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -88,20 +69,15 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-         
-          # Clone repos if not present
-          if [ ! -d "/home/ubuntu/FE-Amsa" ]; then
-            git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
-          fi
-          if [ ! -d "/home/ubuntu/BE-Amsa" ]; then
-            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
-          fi
+          # Clone repos if missing
+          [ ! -d "/home/ubuntu/FE-Amsa" ] && git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
+          [ ! -d "/home/ubuntu/BE-Amsa" ] && git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
 
-          # Pull latest changes
+          # Pull latest
           cd /home/ubuntu/FE-Amsa && git pull origin main
           cd /home/ubuntu/BE-Amsa && git pull origin main
 
-          # Frontend setup
+          # Frontend build
           cd /home/ubuntu/FE-Amsa
           npm install
           npm run build
@@ -110,7 +86,7 @@ jobs:
           sudo mkdir -p /var/www/amsa-fe
           sudo cp -r out/* /var/www/amsa-fe/
 
-          # Backend setup
+          # Backend build
           cd /home/ubuntu/BE-Amsa
           npm install
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
@@ -118,3 +94,7 @@ jobs:
           # Reload services
           sudo systemctl restart nginx
           pm2 save
+
+      timeout: 20m
+      command_timeout: 10m
+      sync: false
