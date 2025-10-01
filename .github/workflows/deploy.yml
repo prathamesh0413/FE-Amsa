@@ -53,6 +53,7 @@ jobs:
           --output text \
           --region ${{ secrets.AWS_REGION }})
         echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_API_URL=http://${INSTANCE_IP}:3001" >> $GITHUB_ENV
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
