@@ -14,7 +14,7 @@ jobs:
     - name: Checkout Frontend
       uses: actions/checkout@v3
       with:
-        repository: 'prathamesh0413/Amsa-website-FE'
+        repository: 'prathamesh0413/FE-Amsa'
         path: frontend
 
     # 2️⃣ Configure AWS credentials
