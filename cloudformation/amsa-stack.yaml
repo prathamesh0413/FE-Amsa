@@ -43,28 +43,42 @@ Resources:
         - !Ref AmsaSecurityGroup
       Tags:
         - Key: Name
-          Value: "Amsa-EC2-Instance"   # ✅ Instance name tag
+          Value: "Amsa-EC2-Instance"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          # Update system
           sudo apt update && sudo apt upgrade -y
           sudo apt install -y git nginx curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
           sudo apt install -y nodejs
           sudo npm install -g pm2 serve
-
+          
+          # Prepare frontend and backend directories
           sudo mkdir -p /var/www/amsa-fe
-          chown -R ubuntu:ubuntu /var/www/amsa-fe
+          sudo mkdir -p /home/ubuntu/BE-Amsa
+          chown -R ubuntu:ubuntu /var/www/amsa-fe /home/ubuntu/BE-Amsa
 
-          # Configure Nginx for frontend
+          # Configure Nginx for frontend and backend proxy
           cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
           server {
               listen 80;
               server_name _;
+              
               root /var/www/amsa-fe;
               index index.html;
+              
               location / {
                   try_files \$uri /index.html;
+              }
+              
+              location /api {
+                  proxy_pass http://localhost:3001;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
               }
           }
           EOF
