@@ -60,7 +60,13 @@ jobs:
         repository: 'prathamesh0413/BE-Amsa'
         path: backend
 
-    # 8. Build Frontend
+    # 8. Setup Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    # 9. Build Frontend
     - name: Build Frontend
       working-directory: frontend
       run: |
@@ -68,12 +74,12 @@ jobs:
         npm run build
         npm run export || true
 
-    # 9. Build Backend
+    # 10. Build Backend
     - name: Build Backend
       working-directory: backend
       run: npm install
 
-    # 10. Deploy to EC2
+    # 11. Deploy to EC2 via SSH
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -82,28 +88,14 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-          # Clone repos if not present
-          [ ! -d "/home/ubuntu/FE-Amsa" ] && git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
-          [ ! -d "/home/ubuntu/BE-Amsa" ] && git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
+          # Frontend deploy
+          sudo rm -rf /var/www/amsa-fe/*
+          sudo cp -r /home/ubuntu/FE-Amsa/out/* /var/www/amsa-fe/
 
-          # Pull latest changes
-          cd /home/ubuntu/FE-Amsa && git pull origin main
-          cd /home/ubuntu/BE-Amsa && git pull origin main
-
-          # Frontend setup
-          cd /home/ubuntu/FE-Amsa
-          npm install
-          npm run build
-          npm run export || true
-          sudo rm -rf /var/www/amsa-fe
-          sudo mkdir -p /var/www/amsa-fe
-          sudo cp -r out/* /var/www/amsa-fe/
-
-          # Backend setup
+          # Backend deploy
           cd /home/ubuntu/BE-Amsa
-          npm install
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
 
-          # Reload services
+          # Reload Nginx
           sudo systemctl restart nginx
           pm2 save
