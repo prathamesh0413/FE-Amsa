@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EC2 instance for Amsa Frontend and Backend
+Description: EC2 instance for Amsa Frontend
 
 Parameters:
   KeyName:
@@ -18,7 +18,7 @@ Resources:
   AmsaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH, HTTP, Backend API
+      GroupDescription: Allow SSH and HTTP
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -28,38 +28,48 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 3001
-          ToPort: 3001
-          CidrIp: 0.0.0.0/0
 
   AmsaEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
-      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04 AMI (update per your region)
+      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # Update system
           sudo apt update && sudo apt upgrade -y
-
-          # Install basic dependencies only
-          sudo apt install -y git curl nginx
-
-          # Create directories for frontend/backend
+          sudo apt install -y git nginx curl
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt install -y nodejs
+          sudo npm install -g pm2 serve
+          # Prepare frontend directory
           sudo mkdir -p /var/www/amsa-fe
-          mkdir -p /home/ubuntu/FE-Amsa /home/ubuntu/BE-Amsa
-          chown -R ubuntu:ubuntu /home/ubuntu
+          chown -R ubuntu:ubuntu /var/www/amsa-fe
+          # Configure Nginx
+          cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
+          server {
+              listen 80;
+              server_name _;
+              root /var/www/amsa-fe;
+              index index.html;
+              location / {
+                  try_files \$uri /index.html;
+              }
+          }
+          EOF
+          sudo ln -s /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+          sudo systemctl restart nginx
+          sudo systemctl enable nginx
 
 Outputs:
   PublicIP:
-    Description: Public IP of the EC2 instance
+    Description: Public IP of EC2
     Value: !GetAtt AmsaEC2Instance.PublicIp
-
   PublicDNS:
-    Description: Public DNS of the EC2 instance
+    Description: Public DNS of EC2
     Value: !GetAtt AmsaEC2Instance.PublicDnsName

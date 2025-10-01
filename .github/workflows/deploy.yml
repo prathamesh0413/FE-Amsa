@@ -10,29 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout Frontend
+    # 1️⃣ Checkout frontend repo (contains CFN folder)
     - name: Checkout Frontend
       uses: actions/checkout@v3
       with:
-        repository: 'prathamesh0413/FE-Amsa'
+        repository: 'prathamesh0413/Amsa-website-FE'
         path: frontend
 
-    # 2️⃣ Checkout Backend
-    - name: Checkout Backend
-      uses: actions/checkout@v3
-      with:
-        repository: 'prathamesh0413/BE-Amsa'
-        path: backend
-
-    # 3️⃣ Configure AWS credentials
-    - name: Configure AWS credentials
+    # 2️⃣ Configure AWS credentials
+    - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    # 4️⃣ Deploy CloudFormation Stack
+    # 3️⃣ Deploy CloudFormation first
     - name: Deploy CloudFormation Stack
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
@@ -41,7 +34,7 @@ jobs:
         capabilities: CAPABILITY_NAMED_IAM
         parameter-overrides: KeyName=${{ secrets.EC2_KEY_NAME }}
 
-    # 5️⃣ Get EC2 Public IP dynamically
+    # 4️⃣ Get EC2 public IP from CFN outputs
     - name: Get EC2 Public IP
       id: ec2_ip
       run: |
@@ -51,17 +44,17 @@ jobs:
           --output text)
         echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-    # 6️⃣ Wait for EC2 initialization
-    - name: Wait for EC2 Initialization
+    # 5️⃣ Wait for EC2 to initialize
+    - name: Wait for EC2
       run: sleep 60
 
-    # 7️⃣ Setup Node.js for build
+    # 6️⃣ Setup Node.js locally to build frontend
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
 
-    # 8️⃣ Build Frontend
+    # 7️⃣ Build frontend
     - name: Build Frontend
       working-directory: frontend
       run: |
@@ -69,13 +62,8 @@ jobs:
         npm run build
         npm run export || true
 
-    # 9️⃣ Build Backend
-    - name: Build Backend
-      working-directory: backend
-      run: npm install
-
-    # 🔟 Deploy to EC2
-    - name: Deploy to EC2
+    # 8️⃣ Deploy frontend to EC2
+    - name: Deploy Frontend
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ env.EC2_IP }}
@@ -83,20 +71,6 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-          # Prepare directories
-          sudo mkdir -p /var/www/amsa-fe
-          sudo mkdir -p /home/ubuntu/BE-Amsa
-
-          # Deploy frontend
           sudo rm -rf /var/www/amsa-fe/*
           sudo cp -r ./frontend/out/* /var/www/amsa-fe/
-
-          # Deploy backend
-          rsync -av --delete ./backend/ /home/ubuntu/BE-Amsa/
-
-          # Restart backend with pm2
-          pm2 restart amsa-backend || pm2 start /home/ubuntu/BE-Amsa/server.js --name amsa-backend --watch
-
-          # Reload nginx
-          sudo systemctl restart nginx
-          pm2 save
+          sudo systemctl reload nginx
