@@ -19,7 +19,7 @@ jobs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: AmsaStack
-        template: ./cloudformation/amsa-stack.yaml   # Correct path
+        template: ./cloudformation/amsa-stack.yaml
         capabilities: CAPABILITY_NAMED_IAM
         parameter-overrides: KeyName=${{ secrets.EC2_KEY_NAME }}
         no-execute-changeset: false
@@ -28,8 +28,8 @@ jobs:
         disable-rollback: false
         termination-protection: false
       env:
-        AWS_REGION: ${{ secrets.AWS_REGION }}         # ✅ must use AWS_REGION
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }} # optional
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -66,11 +66,25 @@ jobs:
       working-directory: backend
       run: npm install
 
-    # 8️⃣ Deploy Frontend & Backend to EC2
+    # 8️⃣ Get EC2 public IP dynamically
+    - name: Get EC2 Public IP
+      id: get_ip
+      run: |
+        PUBLIC_IP=$(aws ec2 describe-instances \
+          --filters "Name=tag:Name,Values=Amsa-EC2-Instance" "Name=instance-state-name,Values=running" \
+          --query "Reservations[0].Instances[0].PublicIpAddress" \
+          --output text)
+        echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+      env:
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # 9️⃣ Deploy Frontend & Backend to EC2
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ env.EC2_PUBLIC_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
@@ -78,17 +92,17 @@ jobs:
           # --- Frontend deploy ---
           sudo mkdir -p /var/www/amsa-fe
           sudo rm -rf /var/www/amsa-fe/*
-          sudo cp -r /home/ubuntu/runner/work/${{ github.repository }}/frontend/out/* /var/www/amsa-fe/
+          sudo cp -r ./frontend/out/* /var/www/amsa-fe/
           
           # --- Backend deploy ---
           mkdir -p /home/ubuntu/BE-Amsa
-          rsync -av --delete /home/ubuntu/runner/work/${{ github.repository }}/backend/ /home/ubuntu/BE-Amsa/
+          rsync -av --delete ./backend/ /home/ubuntu/BE-Amsa/
           pm2 restart amsa-backend || pm2 start /home/ubuntu/BE-Amsa/server.js --name amsa-backend --watch
 
           # --- Reload Nginx ---
           sudo systemctl reload nginx
           pm2 save
       env:
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

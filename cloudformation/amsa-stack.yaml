@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EC2 instance for Amsa Frontend
+Description: EC2 instance for Amsa Frontend and Backend
 
 Parameters:
   KeyName:
@@ -18,7 +18,7 @@ Resources:
   AmsaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH and HTTP
+      GroupDescription: Allow SSH, HTTP, and Backend API
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -27,6 +27,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3001
+          ToPort: 3001
           CidrIp: 0.0.0.0/0
 
   AmsaEC2Instance:
@@ -37,6 +41,9 @@ Resources:
       ImageId: ami-080e1f13689e07408  # Ubuntu 22.04
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
+      Tags:
+        - Key: Name
+          Value: "Amsa-EC2-Instance"   # ✅ Instance name tag
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -45,10 +52,11 @@ Resources:
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
           sudo apt install -y nodejs
           sudo npm install -g pm2 serve
-          # Prepare frontend directory
+
           sudo mkdir -p /var/www/amsa-fe
           chown -R ubuntu:ubuntu /var/www/amsa-fe
-          # Configure Nginx
+
+          # Configure Nginx for frontend
           cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
           server {
               listen 80;
@@ -60,6 +68,7 @@ Resources:
               }
           }
           EOF
+
           sudo ln -s /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
           sudo rm -f /etc/nginx/sites-enabled/default
           sudo nginx -t
