@@ -89,11 +89,11 @@ jobs:
         port: 22
         script: |
           # Clone repos if not present
-          if [ ! -d "/home/ubuntu/Amsa-website-FE" ]; then
-            git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/Amsa-website-FE
+          if [ ! -d "/home/ubuntu/FE-Amsa" ]; then
+            git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
           fi
-          if [ ! -d "/home/ubuntu/Amsa-website-BE" ]; then
-            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/Amsa-website-BE
+          if [ ! -d "/home/ubuntu/BE-Amsa" ]; then
+            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
           fi
 
           # Pull latest
