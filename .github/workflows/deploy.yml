@@ -22,10 +22,11 @@ jobs:
         template: ./cloudformation/amsa-stack.yaml   # Correct path in your repo
         capabilities: CAPABILITY_NAMED_IAM
         parameter-overrides: KeyName=${{ secrets.EC2_KEY_NAME }}
+        region: ${{ secrets.AWS_REGION }}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        
 
     # 3️⃣ Checkout Frontend repo
     - name: Checkout Frontend
