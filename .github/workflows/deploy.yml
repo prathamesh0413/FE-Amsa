@@ -10,48 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout Frontend
-    - name: Checkout Frontend
+    # 1️⃣ Checkout Infra (CloudFormation)
+    - name: Checkout Infra
       uses: actions/checkout@v3
       with:
-        repository: 'prathamesh0413/FE-Amsa'
-        path: frontend
+        path: infra
 
-    # 2️⃣ Checkout Backend
-    - name: Checkout Backend
-      uses: actions/checkout@v3
-      with:
-        repository: 'prathamesh0413/BE-Amsa'
-        path: backend
-
-    # 3️⃣ Configure AWS credentials
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-
-    # 4️⃣ Deploy CloudFormation Stack
+    # 2️⃣ Deploy CloudFormation stack
     - name: Deploy CloudFormation
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: AmsaStack
-        template: ./frontend/cloudformation/amsa-stack.yaml
+        template: ./infra/amsa-stack.yaml
         capabilities: CAPABILITY_NAMED_IAM
         parameter-overrides: KeyName=${{ secrets.EC2_KEY_NAME }}
 
-    # 5️⃣ Get EC2 Public IP dynamically
+    # 3️⃣ Get EC2 Public IP
     - name: Get EC2 Public IP
       id: ec2_ip
       run: |
         IP=$(aws cloudformation describe-stacks \
           --stack-name AmsaStack \
           --query "Stacks[0].Outputs[?OutputKey=='PublicIP'].OutputValue" \
-          --output text)
+          --output text \
+          --region ${{ secrets.AWS_REGION }})
         echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-    # 6️⃣ Setup Node.js on runner for build
+    # 4️⃣ Checkout Frontend
+    - name: Checkout Frontend
+      uses: actions/checkout@v3
+      with:
+        repository: 'prathamesh0413/FE-Amsa'
+        path: frontend
+
+    # 5️⃣ Checkout Backend
+    - name: Checkout Backend
+      uses: actions/checkout@v3
+      with:
+        repository: 'prathamesh0413/BE-Amsa'
+        path: backend
+
+    # 6️⃣ Setup Node.js
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
@@ -63,35 +62,23 @@ jobs:
       run: |
         npm install
         npm run build
-        npm run export || true
+        npm run export || true  # must generate frontend/out
 
-    # 8️⃣ Build Backend (install dependencies)
+    # 8️⃣ Verify frontend build exists
+    - name: Verify Frontend Build
+      run: |
+        if [ ! -d frontend/out ]; then
+          echo "Error: frontend/out folder missing!"
+          exit 1
+        fi
+
+    # 9️⃣ Build Backend
     - name: Build Backend
       working-directory: backend
       run: npm install
 
-    # 9️⃣ Upload Frontend to EC2
-    - name: Upload Frontend to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ env.EC2_IP }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "frontend/out/*"
-        target: "/var/www/amsa-fe/"
-
-    # 🔟 Upload Backend to EC2
-    - name: Upload Backend to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ env.EC2_IP }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "backend/*"
-        target: "/home/ubuntu/BE-Amsa/"
-
-    # 1️⃣1️⃣ Restart Backend and reload Nginx
-    - name: Restart Services on EC2
+    # 🔟 Deploy to EC2
+    - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ env.EC2_IP }}
@@ -99,7 +86,21 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-          cd /home/ubuntu/BE-Amsa
-          pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
+          # Create directories if not exist
+          sudo mkdir -p /var/www/amsa-fe
+          mkdir -p /home/ubuntu/BE-Amsa
+          chown -R ubuntu:ubuntu /home/ubuntu
+
+          # Deploy frontend
+          sudo rm -rf /var/www/amsa-fe/*
+          sudo cp -r /home/ubuntu/Amsa-website-FE/out/* /var/www/amsa-fe/
+
+          # Deploy backend
+          rsync -av --delete ./backend/ /home/ubuntu/BE-Amsa/
+
+          # Restart backend via pm2
+          pm2 restart amsa-backend || pm2 start /home/ubuntu/BE-Amsa/server.js --name amsa-backend --watch
+
+          # Reload Nginx
           sudo systemctl reload nginx
           pm2 save
