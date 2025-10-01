@@ -22,6 +22,7 @@ jobs:
         template: ./cloudformation/amsa-stack.yaml   # Correct path
         capabilities: CAPABILITY_NAMED_IAM
         parameter-overrides: KeyName=${{ secrets.EC2_KEY_NAME }}
+        region: ${{ secrets.AWS_REGION }}
       env:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
