@@ -37,18 +37,56 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyName          # ✅ Use the parameter here
-      ImageId: ami-080e1f13689e07408  # Replace with correct Ubuntu 22.04 AMI for your region
+      KeyName: !Ref KeyName   # ✅ KeyPair from Parameters
+      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04 AMI for your region
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          sudo apt update -y
+          # Update & upgrade system
+          sudo apt update && sudo apt upgrade -y
+
+          # Install dependencies
           sudo apt install -y git nginx curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
           sudo apt-get install -y nodejs
-          sudo npm install -g pm2
+          sudo npm install -g pm2 serve
+
+          # Install backend dependencies
+          mkdir -p /home/ubuntu/amsa-backend
+          cd /home/ubuntu/amsa-backend
+          npm install express nodemailer dotenv cors
+
+          # Configure Nginx for frontend + backend proxy
+          cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
+          server {
+              listen 80;
+              server_name _;
+
+              root /var/www/amsa-fe;
+              index index.html;
+
+              location / {
+                  try_files \$uri /index.html;
+              }
+
+              location /api {
+                  proxy_pass http://localhost:3001;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
+              }
+          }
+          EOF
+
+          # Enable new site
+          sudo ln -s /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+          sudo systemctl reload nginx
           sudo systemctl enable nginx
           sudo systemctl start nginx
 
