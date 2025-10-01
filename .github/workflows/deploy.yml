@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Repo (needed for CloudFormation template)
+    # 1. Checkout Infra Repo (CloudFormation template)
     - name: Checkout Infra Repo
       uses: actions/checkout@v3
 
@@ -42,7 +42,7 @@ jobs:
           --region ${{ secrets.AWS_REGION }})
         echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-    # 5. Wait for EC2 to initialize
+    # 5. Wait for EC2 initialization
     - name: Wait for EC2 Initialization
       run: sleep 60
 
@@ -79,7 +79,7 @@ jobs:
       working-directory: backend
       run: npm install
 
-    # 11. Deploy to EC2 dynamically using the IP
+    # 11. Deploy to EC2
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.0.0
       with:
@@ -88,6 +88,13 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
+          # Install dependencies if missing
+          sudo apt update -y
+          sudo apt install -y git nginx
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt install -y nodejs
+          sudo npm install -g pm2
+
           # Clone repos if not present
           if [ ! -d "/home/ubuntu/FE-Amsa" ]; then
             git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
@@ -96,12 +103,12 @@ jobs:
             git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
           fi
 
-          # Pull latest
-          cd /home/ubuntu/Amsa-website-FE && git pull origin main
-          cd /home/ubuntu/Amsa-website-BE && git pull origin main
+          # Pull latest changes
+          cd /home/ubuntu/FE-Amsa && git pull origin main
+          cd /home/ubuntu/BE-Amsa && git pull origin main
 
           # Frontend setup
-          cd /home/ubuntu/Amsa-website-FE
+          cd /home/ubuntu/FE-Amsa
           npm install
           npm run build
           npm run export || true
@@ -110,10 +117,10 @@ jobs:
           sudo cp -r out/* /var/www/amsa-fe/
 
           # Backend setup
-          cd /home/ubuntu/Amsa-website-BE
+          cd /home/ubuntu/BE-Amsa
           npm install
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
 
           # Reload services
-          sudo systemctl reload nginx
+          sudo systemctl restart nginx
           pm2 save
