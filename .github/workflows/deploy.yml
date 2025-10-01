@@ -11,7 +11,7 @@ jobs:
 
     steps:
     # 1. Checkout Repo (needed for CloudFormation template)
-    - name: Checkout Repo
+    - name: Checkout Infra Repo
       uses: actions/checkout@v3
 
     # 2. Configure AWS credentials
@@ -42,22 +42,22 @@ jobs:
           --region ${{ secrets.AWS_REGION }})
         echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-    # ⚠️ 5. Add wait for EC2 to finish init
+    # 5. Wait for EC2 to initialize
     - name: Wait for EC2 Initialization
       run: sleep 60
 
-    # 6. Checkout Frontend
+    # 6. Checkout Frontend Repo
     - name: Checkout Frontend
       uses: actions/checkout@v3
       with:
-        repository: 'prathamesh0413/Amsa-website-FE'
+        repository: 'prathamesh0413/FE-Amsa'
         path: frontend
 
-    # 7. Checkout Backend
+    # 7. Checkout Backend Repo
     - name: Checkout Backend
       uses: actions/checkout@v3
       with:
-        repository: 'prathamesh0413/Amsa-website-BE'
+        repository: 'prathamesh0413/BE-Amsa'
         path: backend
 
     # 8. Setup Node.js
@@ -90,10 +90,10 @@ jobs:
         script: |
           # Clone repos if not present
           if [ ! -d "/home/ubuntu/Amsa-website-FE" ]; then
-            git clone https://github.com/prathamesh0413/Amsa-website-FE.git /home/ubuntu/Amsa-website-FE
+            git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/Amsa-website-FE
           fi
           if [ ! -d "/home/ubuntu/Amsa-website-BE" ]; then
-            git clone https://github.com/prathamesh0413/Amsa-website-BE.git /home/ubuntu/Amsa-website-BE
+            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/Amsa-website-BE
           fi
 
           # Pull latest
