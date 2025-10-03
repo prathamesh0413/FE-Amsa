@@ -56,8 +56,8 @@ Resources:
 
           # Prepare frontend and backend directories
           sudo mkdir -p /var/www/amsa-fe
-          sudo mkdir -p /home/ubuntu/BE-Amsa
-          chown -R ubuntu:ubuntu /var/www/amsa-fe /home/ubuntu/BE-Amsa
+          # sudo mkdir -p /home/ubuntu/BE-Amsa
+          # chown -R ubuntu:ubuntu /var/www/amsa-fe /home/ubuntu/BE-Amsa
 
           # Configure Nginx for frontend and backend proxy
           cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
