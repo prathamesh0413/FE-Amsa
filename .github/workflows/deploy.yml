@@ -28,22 +28,21 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
 
     # 4️⃣ Build Frontend
     - name: Build Frontend
       working-directory: frontend
       run: |
         npm install
-        npm run build
-        npm run export || true   # static export if available
+        npm run build   # Next.js 15 handles static export with output: 'export'
 
-    # 5️⃣ Prepare Backend
+    # 5️⃣ Build Backend
     - name: Build Backend
       working-directory: backend
       run: npm install
 
-    # 6️⃣ Get EC2 Instance IP from Tag Name
+    # 6️⃣ Get EC2 Instance IP
     - name: Get EC2 Public IP
       id: get_ip
       run: |
@@ -53,13 +52,12 @@ jobs:
           --output text \
           --region ${{ secrets.AWS_REGION }})
         echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
-        echo "NEXT_PUBLIC_API_URL=http://${INSTANCE_IP}" >> $GITHUB_ENV
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    # 7️⃣ Deploy Frontend & Backend to EC2
+    # 7️⃣ Deploy to EC2
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -68,36 +66,31 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-          # Clone repositories if not present
+          # --- Frontend ---
           if [ ! -d "/home/ubuntu/FE-Amsa" ]; then
             git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
           fi
-          if [ ! -d "/home/ubuntu/BE-Amsa" ]; then
-            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
-          fi
-
-          # Pull latest changes
-          cd /home/ubuntu/FE-Amsa && git pull origin main
-          cd /home/ubuntu/BE-Amsa && git pull origin main
-
-          # --- Frontend setup (Next.js static build for Nginx) ---
           cd /home/ubuntu/FE-Amsa
+          git pull origin main
           npm install
           npm run build
-          npm run export || true
           sudo rm -rf /var/www/amsa-fe
           sudo mkdir -p /var/www/amsa-fe
           sudo cp -r out/* /var/www/amsa-fe/
 
-          # --- Backend setup (Node.js API runs on port 3001 via PM2) ---
+          # --- Backend ---
+          if [ ! -d "/home/ubuntu/BE-Amsa" ]; then
+            git clone https://github.com/prathamesh0413/BE-Amsa.git /home/ubuntu/BE-Amsa
+          fi
           cd /home/ubuntu/BE-Amsa
+          git pull origin main
           npm install
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
+          pm2 save
 
-          # --- Reload services ---
+          # --- Reload Nginx ---
           sudo nginx -t
           sudo systemctl restart nginx
-          pm2 save
       env:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
