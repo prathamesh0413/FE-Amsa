@@ -74,6 +74,7 @@ jobs:
           git pull origin main
           npm install
           npm run build
+          npm run export || true
           sudo rm -rf /var/www/amsa-fe
           sudo mkdir -p /var/www/amsa-fe
           sudo cp -r out/* /var/www/amsa-fe/
