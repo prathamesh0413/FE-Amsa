@@ -97,7 +97,7 @@ jobs:
           # --- Reload services ---
           sudo nginx -t
           sudo systemctl restart nginx
-          pm2 sa
+          pm2 save
       env:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
