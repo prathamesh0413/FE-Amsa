@@ -87,7 +87,7 @@ jobs:
           git pull origin main
           npm install
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
-          pm2 save
+          pm2 sa
 
           # --- Reload Nginx ---
           sudo nginx -t
