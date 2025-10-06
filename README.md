@@ -1,6 +1,6 @@
 # 🌟 AMSA Website  
 
-![Project Banner](https://via.placeholder.com/1200x300?text=AMSA+Website+Project)  
+![Project Banner](https://media.gettyimages.com/id/1363235639/vector/vector-set-of-illustration-project-management-concept-line-art-style-background-design-for.jpg?s=612x612&w=gi&k=20&c=cLm0WqjWbDPB4ICiJT8eIZ-ydEHjUpIzY6iZEBLF46g=)  
 
 **AMSA** is a full-stack web application designed to manage and showcase AMSA activities, events, and member engagement.  
 It uses a modern React frontend, a Node.js backend, automated CI/CD pipeline, and secure AWS-based deployment.  
@@ -9,11 +9,10 @@ It uses a modern React frontend, a Node.js backend, automated CI/CD pipeline, an
 
 ## 🚀 Features  
 
-- ⚡ **Fast Frontend**: React + Vite for optimized builds and performance  
+- ⚡ **Fast Frontend**: React & Typescript for optimized builds and performance  
 - 🔧 **Backend API**: Node.js + Express for business logic and APIs  
-- 🛠️ **CI/CD Pipeline**: Automated builds and deployments via GitHub Actions  
-- 🌍 **CloudFront CDN**: Global delivery of static frontend assets  
-- 📊 **Monitoring & Alerts**: Server health and error tracking via AWS CloudWatch  
+- 🛠️ **CI/CD Pipeline**: Automated builds and deployments via GitHub Actions   
+- 📊 **Monitoring & Alerts**: Server health and error tracking via AWS CloudWatch and Sns
 - ☁️ **AWS Hosting**: Frontend + Backend deployed on AWS EC2  
 - 🔐 **Secure by Default**: HTTPS + SSL certificates  
 
@@ -23,8 +22,8 @@ It uses a modern React frontend, a Node.js backend, automated CI/CD pipeline, an
 
 ```
 amsa-website/
-├── CloudFormation/         # AWS infrastructure templates
-├── frontend/               # React + Vite frontend
+├── CloudFormation/        # AWS infrastructure templates
+├── frontend/               # React + Typescript frontend
 ├── backend/                # Node.js + Express backend
 ├── .github/workflows/      # CI/CD pipeline
 └── README.md               # Documentation
@@ -36,7 +35,7 @@ amsa-website/
 
 | Component   | Technology                     |
 |-------------|--------------------------------|
-| Frontend    | React, Vite                    |
+| Frontend    | React,Typescript               |
 | Backend     | Node.js, Express               |
 | Hosting     | AWS EC2                        |
 | CDN         | AWS CloudFront                 |
@@ -60,7 +59,7 @@ amsa-website/
 ### 1️⃣ CloudFormation (IaC)  
 - Spins up EC2 instances for frontend & backend  
 - Configures networking, ports, and security groups  
-- Sets up CloudFront distribution  
+- Sets up Monitoring through Cloudwatch & SNS.  
 
 ### 2️⃣ CI/CD (GitHub Actions)  
 - Triggered on `push` to `main`  
@@ -78,23 +77,27 @@ amsa-website/
 cd frontend
 npm install
 npm run build
+npm run export(for out folder)
 
 # Copy build to EC2
-scp -r dist/ ubuntu@<FRONTEND_EC2_IP>:/var/www/html
+# Prepare frontend directory
+          mkdir -p /var/www/amsa-fe
 ```
 
 **Backend**
 ```bash
-cd backend
-npm install
-
+name: Build Backend
+      working-directory: backend
+      run: npm install
 # Copy backend to EC2
 scp -r ./ ubuntu@<BACKEND_EC2_IP>:/home/ubuntu/backend
 
 # SSH into EC2 and start
-ssh ubuntu@<BACKEND_EC2_IP>
-cd backend
-pm2 start index.js --name backend
+cd /home/ubuntu/BE-Amsa
+          git pull origin main
+          npm install
+          pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
+          pm2 save
 ```
 
 **CloudFront + SSL**
@@ -106,7 +109,7 @@ pm2 start index.js --name backend
 ## 🌐 Demo URLs  
 
 - Frontend (HTTPS): `https://<FRONTEND_EC2_IP>`  
-- Backend API (HTTPS): `https://<BACKEND_EC2_IP>`  
+- Backend API (HTTPS): `https://<FRONTEND_EC2_IP>/api/contact`  
 *(Replace with EC2 IPs or CloudFront URLs)*  
 
 ---
@@ -123,15 +126,21 @@ cd frontend
 npm install
 npm run dev      # Development
 npm run build    # Production
+npm run export   #For out folder
 
 # Backend
 cd ../backend
 npm install
 npm start        # Development
-pm2 start index.js --name backend  # Production
+pm2 start server.js --name backend  # Production
 ```
 
 ---
+| Repository                         | Description                                                                                                                                                           | Link                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 🖥️ **Frontend (Amsa-website-FE)** | React + TypeScript-based single-page application with modern UI for AMSA’s website. It handles user interaction, event display, and API integration with the backend. | [🔗 View Repository](https://github.com/prathamesh0413/FE-Amsa) |
+| ⚙️ **Backend (Amsa-website-BE)**   | Node.js + Express REST API providing backend logic, email services (contact form), and database integration. Deployed with PM2 on AWS EC2.                            | [🔗 View Repository](https://github.com/prathamesh0413/BE-Amsa) |
+
 
 ## 🏷️ Badges  
 
@@ -145,4 +154,4 @@ pm2 start index.js --name backend  # Production
 
 ## 📄 License  
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file.  
+This project is licensed under the **MIT License**  

@@ -131,7 +131,7 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: email
-      Endpoint: "your-email@example.com"  # Replace with your email
+      Endpoint: "prathamesh.pandhare@alphaseam.com"  # Replace with your email
       TopicArn: !Ref AmsaAlarmTopic
 
   # --- CPU Alarm ---
@@ -189,6 +189,80 @@ Resources:
           Value: !Ref AmsaEC2Instance
         - Name: path
           Value: "/"
+# --- CloudWatch Dashboard ---
+  AmsaDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: "AmsaMonitoringDashboard"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "CPU Utilization",
+                "metrics": [
+                  [ "AWS/EC2", "CPUUtilization", "InstanceId", "${AmsaEC2Instance}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "Memory Usage (%)",
+                "metrics": [
+                  [ "CWAgent", "mem_used_percent", "InstanceId", "${AmsaEC2Instance}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 12,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "Disk Usage (%)",
+                "metrics": [
+                  [ "CWAgent", "disk_used_percent", "InstanceId", "${AmsaEC2Instance}", "path", "/" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 18,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "Node.js Process (server.js) Running",
+                "metrics": [
+                  [ "CWAgent", "procstat_pid_count", "process_name", "server.js", "InstanceId", "${AmsaEC2Instance}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
 
 Outputs:
   PublicIP:
