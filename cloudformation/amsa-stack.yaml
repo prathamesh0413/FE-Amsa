@@ -15,6 +15,9 @@ Parameters:
     Description: EC2 instance type
 
 Resources:
+  # -------------------------------------------------
+  # Security Group
+  # -------------------------------------------------
   AmsaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -33,12 +36,15 @@ Resources:
           ToPort: 3001
           CidrIp: 0.0.0.0/0
 
+  # -------------------------------------------------
+  # EC2 Instance
+  # -------------------------------------------------
   AmsaEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
-      ImageId: ami-080e1f13689e07408  # Ubuntu 22.04
+      ImageId: ami-080e1f13689e07408   # Ubuntu 22.04 LTS (verify region)
       SecurityGroupIds:
         - !Ref AmsaSecurityGroup
       Tags:
@@ -47,24 +53,29 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # Update system
-          apt update && apt upgrade -y
-          apt install -y git nginx curl unzip
-          
-          # Install Node.js 20
-          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-          apt install -y nodejs
-          
-          # Install global npm packages
-          npm install -g pm2 serve amazon-cloudwatch-agent
-          sudo npm install -g pm2
-          sudo npm install -g serve
+          set -e
+          echo "==== Updating System ===="
+          sudo apt update -y && sudo apt upgrade -y
 
-          # Prepare frontend directory
-          mkdir -p /var/www/amsa-fe
+          echo "==== Installing Required Packages ===="
+          sudo apt install -y git curl unzip nginx
 
-          # Configure Nginx
-          cat <<EOF > /etc/nginx/sites-available/amsa
+          echo "==== Installing Node.js 20 ===="
+          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt install -y nodejs
+          node -v
+          npm -v
+
+          echo "==== Installing Global NPM Packages ===="
+          sudo npm install -g pm2 serve
+
+          echo "==== Creating App Directories ===="
+          sudo mkdir -p /var/www/amsa-fe
+          sudo mkdir -p /var/www/amsa-be
+          sudo chown -R ubuntu:ubuntu /var/www
+
+          echo "==== Configuring Nginx ===="
+          cat <<EOF | sudo tee /etc/nginx/sites-available/amsa
           server {
               listen 80;
               server_name _;
@@ -87,12 +98,16 @@ Resources:
           }
           EOF
 
-          ln -s /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
-          rm -f /etc/nginx/sites-enabled/default
-          nginx -t && systemctl restart nginx && systemctl enable nginx
+          sudo ln -sf /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+          sudo systemctl restart nginx
+          sudo systemctl enable nginx
 
-          # --- Configure CloudWatch Agent ---
-          cat <<CWCFG > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+          echo "==== Installing CloudWatch Agent ===="
+          sudo apt install -y amazon-cloudwatch-agent
+
+          cat <<CWCFG | sudo tee /opt/aws/amazon-cloudwatch-agent/bin/config.json
           {
             "metrics": {
               "metrics_collected": {
@@ -118,9 +133,16 @@ Resources:
             }
           }
           CWCFG
-          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
 
-  # --- SNS Topic for CloudWatch Alarms ---
+          sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+            -a fetch-config -m ec2 \
+            -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
+
+          echo "==== AMSA EC2 Setup Complete ===="
+
+  # -------------------------------------------------
+  # SNS Topic & Subscription for Alerts
+  # -------------------------------------------------
   AmsaAlarmTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -131,10 +153,12 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: email
-      Endpoint: "prathamesh.pandhare@alphaseam.com"  # Replace with your email
+      Endpoint: "prathamesh.pandhare@alphaseam.com"
       TopicArn: !Ref AmsaAlarmTopic
 
-  # --- CPU Alarm ---
+  # -------------------------------------------------
+  # CloudWatch Alarms
+  # -------------------------------------------------
   AmsaCPUAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -152,7 +176,6 @@ Resources:
         - Name: InstanceId
           Value: !Ref AmsaEC2Instance
 
-  # --- Memory Alarm ---
   AmsaMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -170,7 +193,6 @@ Resources:
         - Name: InstanceId
           Value: !Ref AmsaEC2Instance
 
-  # --- Disk Alarm ---
   AmsaDiskAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -189,7 +211,10 @@ Resources:
           Value: !Ref AmsaEC2Instance
         - Name: path
           Value: "/"
-# --- CloudWatch Dashboard ---
+
+  # -------------------------------------------------
+  # CloudWatch Dashboard
+  # -------------------------------------------------
   AmsaDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
@@ -206,7 +231,7 @@ Resources:
               "properties": {
                 "title": "CPU Utilization",
                 "metrics": [
-                  [ "AWS/EC2", "CPUUtilization", "InstanceId", "${AmsaEC2Instance}" ]
+                  ["AWS/EC2", "CPUUtilization", "InstanceId", "${AmsaEC2Instance}"]
                 ],
                 "period": 300,
                 "stat": "Average",
@@ -222,7 +247,7 @@ Resources:
               "properties": {
                 "title": "Memory Usage (%)",
                 "metrics": [
-                  [ "CWAgent", "mem_used_percent", "InstanceId", "${AmsaEC2Instance}" ]
+                  ["CWAgent", "mem_used_percent", "InstanceId", "${AmsaEC2Instance}"]
                 ],
                 "period": 300,
                 "stat": "Average",
@@ -238,7 +263,7 @@ Resources:
               "properties": {
                 "title": "Disk Usage (%)",
                 "metrics": [
-                  [ "CWAgent", "disk_used_percent", "InstanceId", "${AmsaEC2Instance}", "path", "/" ]
+                  ["CWAgent", "disk_used_percent", "InstanceId", "${AmsaEC2Instance}", "path", "/"]
                 ],
                 "period": 300,
                 "stat": "Average",
@@ -252,9 +277,9 @@ Resources:
               "width": 12,
               "height": 6,
               "properties": {
-                "title": "Node.js Process (server.js) Running",
+                "title": "Node.js Process (server.js)",
                 "metrics": [
-                  [ "CWAgent", "procstat_pid_count", "process_name", "server.js", "InstanceId", "${AmsaEC2Instance}" ]
+                  ["CWAgent", "procstat_pid_count", "process_name", "server.js", "InstanceId", "${AmsaEC2Instance}"]
                 ],
                 "period": 300,
                 "stat": "Average",
@@ -264,12 +289,15 @@ Resources:
           ]
         }
 
+# -------------------------------------------------
+# Outputs
+# -------------------------------------------------
 Outputs:
   PublicIP:
-    Description: Public IP of EC2
+    Description: Public IP of EC2 Instance
     Value: !GetAtt AmsaEC2Instance.PublicIp
   PublicDNS:
-    Description: Public DNS of EC2
+    Description: Public DNS of EC2 Instance
     Value: !GetAtt AmsaEC2Instance.PublicDnsName
   AlarmTopic:
     Description: SNS Topic ARN for monitoring alerts
