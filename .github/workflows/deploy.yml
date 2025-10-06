@@ -34,15 +34,15 @@ jobs:
     - name: Build Frontend
       working-directory: frontend
       run: |
-        npm ci
-        npm run build
+        npm install
+        npm run build   # Next.js 15 handles static export with output: 'export'
 
     # 5️⃣ Build Backend
     - name: Build Backend
       working-directory: backend
-      run: npm ci
+      run: npm install
 
-    # 6️⃣ Get EC2 Public IP
+    # 6️⃣ Get EC2 Instance IP
     - name: Get EC2 Public IP
       id: get_ip
       run: |
@@ -66,21 +66,6 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
-          set -e  # Stop on error
-
-          # --- Prerequisites ---
-          sudo apt update -y
-          sudo apt install -y git nginx curl
-
-          if ! command -v node >/dev/null 2>&1; then
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt install -y nodejs
-          fi
-
-          if ! command -v pm2 >/dev/null 2>&1; then
-            sudo npm install -g pm2
-          fi
-
           # --- Frontend ---
           if [ ! -d "/home/ubuntu/FE-Amsa" ]; then
             git clone https://github.com/prathamesh0413/FE-Amsa.git /home/ubuntu/FE-Amsa
@@ -90,8 +75,8 @@ jobs:
           npm install
           npm run build
           npm run export || true
+          sudo rm -rf /var/www/amsa-fe
           sudo mkdir -p /var/www/amsa-fe
-          sudo rm -rf /var/www/amsa-fe/*
           sudo cp -r out/* /var/www/amsa-fe/
 
           # --- Backend ---
@@ -104,30 +89,7 @@ jobs:
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
           pm2 save
 
-          # --- Nginx Configuration ---
-          if [ ! -f "/etc/nginx/sites-available/amsa" ]; then
-            sudo bash -c 'cat > /etc/nginx/sites-available/amsa' <<EOF
-server {
-    listen 80;
-    server_name _;
-    root /var/www/amsa-fe;
-    index index.html;
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    location /api/ {
-        proxy_pass http://localhost:3001/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-}
-EOF
-            sudo ln -sf /etc/nginx/sites-available/amsa /etc/nginx/sites-enabled/
-            sudo rm -f /etc/nginx/sites-enabled/default
-          fi
-
+          # --- Reload Nginx ---
           sudo nginx -t
           sudo systemctl restart nginx
       env:
