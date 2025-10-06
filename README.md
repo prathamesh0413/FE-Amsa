@@ -1,6 +1,18 @@
 # 🌟 AMSA Website  
 
-![Project Banner](https://media.gettyimages.com/id/1363235639/vector/vector-set-of-illustration-project-management-concept-line-art-style-background-design-for.jpg?s=612x612&w=gi&k=20&c=cLm0WqjWbDPB4ICiJT8eIZ-ydEHjUpIzY6iZEBLF46g=)  
+![Project Banner](https://www.amsa.org/wp-content/uploads/2020/10/amsa-logo-main-trimmed.png)  
+<p align="center">
+<img src="https://img.shields.io/badge/Project-AMSA%20Website-blue?style=for-the-badge&logo=github">
+<img src="https://img.shields.io/badge/Frontend-Next.js-black?style=for-the-badge&logo=next.js">
+<img src="https://img.shields.io/badge/Backend-Node.js-green?style=for-the-badge&logo=node.js">
+<img src="https://img.shields.io/badge/Deployed%20On-AWS%20EC2-orange?style=for-the-badge&logo=amazonaws"…
+<img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?style=for-the-badge&logo=githubactio…
+<img src="https://img.shields.io/badge/Process%20Manager-PM2-yellow?style=for-the-badge&logo=pm2">
+<img src="https://img.shields.io/badge/Reverse%20Proxy-Nginx-green?style=for-the-badge&logo=nginx">
+<img src="https://img.shields.io/badge/Infrastructure-AWS%20CloudFormation-red?style=for-the-badge&logo=a…
+<img src="https://img.shields.io/badge/Monitoring-AWS%20CloudWatch-purple?style=for-the-badge&logo=amazon…
+<img src="https://img.shields.io/badge/Notifications-AWS%20SNS-orange?style=for-the-badge&logo=amazonaws"…
+</p>
 
 **AMSA** is a full-stack web application designed to manage and showcase AMSA activities, events, and member engagement.  
 It uses a modern React frontend, a Node.js backend, automated CI/CD pipeline, and secure AWS-based deployment.  
@@ -48,8 +60,7 @@ amsa-website/
 ## 🏗️ Architecture Overview  
 
 - **GitHub Actions** → Builds, tests, and deploys frontend + backend  
-- **EC2 Instances** → Hosts frontend and backend servers  
-- **CloudFront CDN** → Caches frontend for global performance  
+- **EC2 Instances** → Hosts frontend and backend servers   
 - **Monitoring** → Tracks uptime, CPU, memory, network, and errors  
 
 ---
@@ -81,7 +92,7 @@ npm run export(for out folder)
 
 # Copy build to EC2
 # Prepare frontend directory
-          mkdir -p /var/www/amsa-fe
+mkdir -p /var/www/amsa-fe
 ```
 
 **Backend**
@@ -99,18 +110,13 @@ cd /home/ubuntu/BE-Amsa
           pm2 restart amsa-backend || pm2 start server.js --name amsa-backend --watch
           pm2 save
 ```
-
-**CloudFront + SSL**
-- Configure CloudFront to serve `/dist`  
-- Attach SSL certificate for HTTPS  
-
 ---
 
 ## 🌐 Demo URLs  
 
 - Frontend (HTTPS): `https://<FRONTEND_EC2_IP>`  
 - Backend API (HTTPS): `https://<FRONTEND_EC2_IP>/api/contact`  
-*(Replace with EC2 IPs or CloudFront URLs)*  
+ 
 
 ---
 
@@ -138,8 +144,8 @@ pm2 start server.js --name backend  # Production
 ---
 | Repository                         | Description                                                                                                                                                           | Link                                                                    |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 🖥️ **Frontend (Amsa-website-FE)** | React + TypeScript-based single-page application with modern UI for AMSA’s website. It handles user interaction, event display, and API integration with the backend. | [🔗 View Repository](https://github.com/prathamesh0413/FE-Amsa) |
-| ⚙️ **Backend (Amsa-website-BE)**   | Node.js + Express REST API providing backend logic, email services (contact form), and database integration. Deployed with PM2 on AWS EC2.                            | [🔗 View Repository](https://github.com/prathamesh0413/BE-Amsa) |
+| 🖥️ **Frontend (FE-Amsa)** | React + TypeScript-based single-page application with modern UI for AMSA’s website. It handles user interaction, event display, and API integration with the backend. | [🔗 View Repository](https://github.com/prathamesh0413/FE-Amsa) |
+| ⚙️ **Backend (BE-Amsa)**   | Node.js + Express REST API providing backend logic, email services (contact form), and database integration. Deployed with PM2 on AWS EC2.                            | [🔗 View Repository](https://github.com/prathamesh0413/BE-Amsa) |
 
 
 ## 🏷️ Badges  
