@@ -274,3 +274,4 @@ Outputs:
   AlarmTopic:
     Description: SNS Topic ARN for monitoring alerts
     Value: !Ref AmsaAlarmTopic
+  
