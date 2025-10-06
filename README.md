@@ -1,7 +1,7 @@
 # 🌟 AMSA Website  
 
 ![Project Banner](https://www.amsa.org/wp-content/uploads/2020/10/amsa-logo-main-trimmed.png)  
-
+  
 <p align="center">
   <img src="https://img.shields.io/badge/Project-AMSA%20Website-blue?style=for-the-badge&logo=github" />
   <img src="https://img.shields.io/badge/Frontend-Next.js-black?style=for-the-badge&logo=nextdotjs" />
